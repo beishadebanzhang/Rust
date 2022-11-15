@@ -1,0 +1,48 @@
+环境配置:
+    更新: rustup update
+    卸载: rustup self uninstall
+    版本: rustc --version
+    文档: rustup doc
+rust程序:
+    命名: hello_word.rs
+    编译: rustc hello_word.rs
+        --> 会生成exe和pdb(包含调试信息)
+        --> rust是ahead-of-time语言, 编译后执行不依赖rust
+        --> rustc只适合简单的rust程序, 负责的需要用cargo
+    运行:
+        .\hello_word.exe windows
+        ./hello_word linux
+cargo:
+    rust的构建系统和包管理工具 --> 构建代码、下载依赖的库、构建这些库...
+    安装rust的时候会安装cargo --> cargo --version
+    创建项目:
+        cargo new hello_cargo
+    目录结构:
+        hello_cargo
+            -- Cargo.toml
+                --> toml格式是cargo的配置格式
+                --> 结构:
+                    [package] # 区域标题, 表示下方内容是用来配置包(package)的
+                    name = "Test01" # 项目名
+                    version = "0.1.0" # 版本号
+                    authors = ["sunny <1587046xxx@qq.com>"] # 项目作者
+                    edition = "2021" # 使用的rust版本
+                    [dependencies] # 依赖区域, 控制项目依赖库 --> rust中代码的包称为crate
+            -- src
+                -- main.rs
+            .gitignore 初始化了一个新的git仓库
+                --> 可以使用其他vcs或不使用vcs: cargo new --vcs进行配置
+    构建:
+        cargo build
+            --> 创建可执行文件 target\debug\projectName.exe
+        第一次运行cargo build会在顶层目录生产cargo.lock文件
+            --> 该文件负责追踪项目依赖的精确版本
+            --> 不需要手动修改该文件
+        cargo run: 编译代码 + 执行结果
+            如果之前编译成功过, 并且源码没有改变, 那么就会直接运行二进制文件
+        cargo check:
+            检查代码, 确保能编译通过, 但是不产生任何可执行文件
+            cargo check比cargo build快得多
+        cargo build --release
+            为发布构建, 编译时会进行优化 --> 代码会运行的更快, 但编译时间更长
+            会在target/release而不是target/debug生成可执行文件
