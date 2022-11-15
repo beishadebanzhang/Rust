@@ -1,0 +1,83 @@
+变量与可变性
+    let 声明变量, 默认情况变量是不可变的(immutable)
+    let mut 声明可变变量
+    常量:
+        常量在绑定值以后也是不可变的, 但与let变量有所区别
+            不可以使用mut, 常量永远是不可变的
+            使用const声明, 必须标注类型
+            常量可以在任何作用域内声明, 包括全局作用域
+            常量只可以绑定到常量表达式, 无法绑定到函数的调用结果或只能在运行时才能计算出的值
+        程序运行期间, 常量在其声明的作用域内一直有效
+        命名规范：const MAX_POINTS:u32 = 100_000;
+    shadowing(隐藏):
+        可使用相同的名字声明新的变量, 新的变量会隐藏之前声明的同名变量
+        shadow和把变量标记为mut是不一样的
+            如果不使用let关键字, 那么给非mut变量赋值会导致编辑报错
+            使用let声明的同名新变量, 也是不可变的
+            使用let声明的同名新变量, 类型可以与之前的不同
+数据类型
+    rust是静态编译语言, 在编译时必须知道所有变量的类型
+        --> 基于使用的值, 编译器通常能够推断出他的具体类型
+        --> 如果可能的类型比较多(如String转换为整数的parse方法), 就必须添加类型标注, 否则编译会报错
+            --> let guess = "42".parse().expect("xxx");
+                --> 报错 consider giving `guess` an explicit type
+                    --> let guess:u32 = "42".parse().expect("xxx");
+    标量类型
+        标量类型代表一个单个的值
+        rust有四个主要的标量类型
+            整数类型
+                无符号以u开头, 有符号以i开头, rust整数默认使用i32
+                整数溢出:
+                    如u8范围是0-255, 若设置为256, 在调试模式下编译, 运行时发生panic,
+                发布模式下(cargo build --release)会执行环绕操作, 256变成1, 不会发生panic
+            浮点类型
+                分为f32和f64, 默认f64
+            布尔类型
+                let f: bool = true/false;
+            字符类型
+                char类型被用来描述单个字符
+                字面值使用单引号 let x: char = 'x';let y = 'y';
+                占用4个字节大小
+    复合类型
+        元组(Tuple)
+            可以将多个类型的多个值放在一个类型里
+            长度固定, 一旦声明就无法改变
+            let tup: (i32, f64, u8) = (500, 6.4, 1);
+            // 访问元素
+            println!("{}, {}, {}", tup.0, tup.1, tup.2);
+            // 获取元素值
+            let (x, y, z) = tup;
+            println!("{}, {}, {}", x, y, z);
+        数组
+            数组的数据存放在栈上
+            let a = [1, 2, 3, 4, 5];
+            let b: [i32, 5] = [1, 2, 3, 4, 5];
+            let c = [3, 5]; // 相当于 let c = [3, 3, 3, 3, 3];
+            // 访问元素, 索引越界报panic
+            let first = c[0];
+函数
+    fn test_name(x: i32, y: i32) -> i32 {...}
+    声明函数时, 必须声明每个参数的类型
+    函数体由一系列语句组成, 可选的由一个表达式结束
+        --> let x = { let y = 1; x + 3;}; // let x = x + 3;
+    语句不返回值, 所以不可以使用let将一个语句赋给一个变量
+        let x = (let y = 0); // 报错, let y = 0 是一个语句, x + 3 是表达式
+    函数的返回值:
+        使用 -> 符号声明函数返回值的类型, 但不可以给返回值命名
+        在rust中, 返回值就是函数体的最后一个表达式的值, 可使用return提前返回
+控制流
+    if:
+        if number % 4 = 0 {...} else if number % 4 = 1 {...} else {...}
+    loop:
+        let result = loop { counter += 1; if counter == 10 {break counter * 2;} };
+    while:
+        while number != 0 {...}
+    for:
+        let a = [10, 20, 30];
+        for element in a.iter() {
+            println!("{}", element);
+        }
+    Range:
+        for number in (1..4).rev() { // (1..4): 1-3进行遍历, rev(): 倒序遍历
+            println!("{}", number);
+        }
