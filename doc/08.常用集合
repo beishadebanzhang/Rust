@@ -1,0 +1,75 @@
+Vector:
+    存储多个值, 只能存储相同类型的数据, 值在内存中连续存放
+    // 创建
+    let v: Vec<i32> = Vec::new();
+    let v = vec![1, 2, 3];
+    // 添加
+    v.push(1);
+    // 删除 --> 离开作用域会被清理
+    // get访问 --> 数组越界返回None
+    match v.get(1) {
+        Some(third) => println!(third),
+        None => ...,
+    }
+    // 索引访问 --> 数组越界panic
+    let v = vec![1, 2, 3];
+    let third: &i32 = &v[2];
+    所有权和借用规则:
+        不能在同一作用域拥有可变和不可变引用
+    // 遍历
+    let v = vec![1, 2, 3];
+    for i in &v { println!("{}", i); }
+    for i in &mut v { *i += 50; } --> *代表解引用
+String:
+    字符串字面值: 存储在二进制文件中, 也是字符串切片 --> &str
+    String类型: utf-8编码, 可修改
+    // 新建
+    let mut s = String::new();
+    let s1 = "str".toString();
+    let s2 = String::from("str");
+    // 更新
+    let mut s = String::from("foo");
+    let s1 = String::from("bar");
+    s.push_str(&s1); --> s不受s1作用域影响
+    s.push('s'); --> 参数只能为单个字符
+    let s3 = s + &s1; --> s所有权会发生转让, s失效 --> 实际使用了add方法 fn(self, s:&str)
+    format!("{}-{}", s, s1); --> format连接多个字符串, 与println类似, 但会返回字符串, 不会获得参数的所有权
+    // 访问: rust不支持按索引形式进行访问 --> // todo 原因
+    // 切割 --> 即字符串切片, 越界报panic
+    // 遍历:
+        标量值 chars()
+        字节 bytes()
+        字形簇 标准库未提供
+HashMap:
+    use std::collections::HashMap
+    // 创建, 数据存储在heap上
+    let mut scores: HashMap<String, i32> = HashMap::new();
+    let mut scores = HashMap::new();
+    scores.insert(String::from("Blue"), 10);
+    let teams = vec![String::from("Blue"), String::from("Yellow")];
+    let initial_score = vec![10, 30];
+    let scores = teams.iter().zip(initial_score.iter()).collect();
+    // 所有权: 实现copy trait的类型复制值, 实现drop trait的类型会发生值移动, 转移所有权
+        --> 如果将值引用插入map, 值本身不会移动
+        --> 在hashmap有效期内, 被引用的值必须保持有效
+    // get获取值
+    let mut scores = HashMap::new();
+    scores.insert(String::from("Blue"), 10);
+    scores.insert(String::from("Yellow"), 30);
+    let team_name = String::from("Blue");
+    let score = scores.get(&team_name);
+    match score {
+        Some(s) => println!("{}", s),
+        None => println!("empty"),
+    }
+    // 遍历
+    for (k, v) in &scores {
+        println!("{}: {}", k, v);
+    }
+    // 更新
+    let mut map = HashMap::new();
+    map.insert(String::from("Blue"), 10);
+    // 不存在则更新, 否则保留原值 --> entry检查值是否存在, or_insert存在则返回v的可变引用, 否则插入参数值并返回可变引用
+    map.entry(String::from("Blue")).or_insert(60);
+    // 解引用变更原值
+    *count = 60;

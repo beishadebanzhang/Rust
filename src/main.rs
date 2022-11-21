@@ -1,7 +1,12 @@
-use std::cmp::Ordering;
-use std::io;
-use std::net::IpAddr;
-use rand::Rng;
+// extern crate core;
+
+// use core::panicking::panic;
+// use std::arch::x86_64::_mm_clmulepi64_si128;
+// use std::cmp::Ordering;
+// use std::collections::HashMap;
+// use std::io;
+// use std::net::IpAddr;
+// use rand::Rng;
 
 // fn main1() {
 //     println!("========> 猜数游戏");
@@ -81,34 +86,43 @@ use rand::Rng;
 //
 // }
 
-#[derive(Debug)]
-enum IpAddrKind {
-    V4([u8; 4]),
-    V6([u8; 16]),
-}
-
-impl IpAddrKind {
-    fn value_in_ipAddrKind(&self) -> u8 {
-        match self {
-            IpAddrKind::V4(arr) => {
-                println!("{:?}", arr);
-                arr[0]
-            },
-            IpAddrKind::V6(arr) => {
-                println!("{:?}", arr);
-                return arr[0];
-            }
-        }
-    }
-}
-
-fn main() {
-    let v4 = IpAddrKind::V4([1, 1, 1, 1]);
-    let v6 = IpAddrKind::V6;
-    println!("{:#?}", v4);
-    println!("{:#?}", v6);
-}
-
-// fn main() {
-//
+// #[derive(Debug)]
+// enum IpAddrKind {
+//     V4([u8; 4]),
+//     V6([u8; 16]),
 // }
+//
+// impl IpAddrKind {
+//     fn value_in_ipAddrKind(&self) -> u8 {
+//         match self {
+//             IpAddrKind::V4(arr) => {
+//                 println!("{:?}", arr);
+//                 arr[0]
+//             },
+//             IpAddrKind::V6(arr) => {
+//                 println!("{:?}", arr);
+//                 return arr[0];
+//             }
+//         }
+//     }
+// }
+//
+// fn main() {
+//     let v4 = IpAddrKind::V4([1, 1, 1, 1]);
+//     let v6 = IpAddrKind::V6;
+//     println!("{:#?}", v4);
+//     println!("{:#?}", v6);
+// }
+
+
+
+use std::error::Error;
+use std::fs::File;
+use std::io;
+use std::io::Read;
+
+fn main() -> Result<(), Box<dyn Error>>{
+    let f = File::open("hello.txt")?;
+    return Ok(());
+}
+
