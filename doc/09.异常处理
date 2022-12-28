@@ -13,6 +13,9 @@ panic:
     回溯信息:
         set RUST_BACKTRACE=1 && cargo run
             --> 为了获取带有调试信息的回溯, 必须启用调试符号(cargo run不带--release)
+    直接中止:
+        [profile.release]
+        panic = 'abort'
 Result:
     enum Result<T, E> {
         OK(T), // 操作成功时, ok变体里返回数据的类型

@@ -1,0 +1,173 @@
+泛型:
+    用于代码复用, 编译器在编译时会将泛型"占位符"替换成具体的类型
+    函数定义中的泛型
+        fn largest<T> (list: &[T]) -> T {...}
+    struct定义中的泛型
+        struct Point<T, U> {
+            x: T,
+            y: U,
+        }
+    方法中的泛型:
+        impl<T> Point<T> { // 在T类型上实现方法, struct和方法的泛型参数可以不同
+            fn x(&self) -> &T {
+                return &self.x;
+            }
+        }
+        impl Point<i32> { // 只针对具体类型的实现方法
+            fn x(&self) -> &i32 {
+            return &self.x;
+            }
+        }
+    性能:
+        使用泛型的代码, 和使用具体类型的代码运行速度是一样的
+        单态化: 在编译时将泛型替换为具体类型的过程
+Trait: --> 类似于接口, 抽象的定义行为共享
+    定义: 把方法签名放在一起, 来定义实现某种目的所必须的一组行为
+        --> 关键字 trait
+        --> 只有方法签名, 没有具体实现
+        --> trait可以有多个方法, 每个方法占一行, 以;结尾
+        --> 实现该trait的类型必须提供具体的方法实现
+        pub trait Summary {
+            fn summarize(&self) -> String;
+        }
+    类型上实现trait:
+        pub trait Summary {
+            fn summarize(&self) -> String;
+        }
+
+        #[derive(Debug)]
+        pub struct NewsArticle {
+            pub headline: String,
+            pub location: String,
+            pub author: String,
+            pub content: String,
+        }
+
+        impl Summary for NewsArticle {
+            fn summarize(&self) -> String {
+                format!("{}, by {} ({})", self.headline, self.author, self.location)
+            }
+        }
+
+        fn main() {
+            let article = NewsArticle {
+                headline: String::from("headline"),
+                location: String::from("location"),
+                author: String::from("author"),
+                content: String::from("content"),
+            };
+            println!("{:?}", article);
+            println!("{}", article.summarize());
+        }
+    实现trait的约束:
+        可以在某个类型上实现某个trait的前提条件: 这个类型或这个trait是在本地trait上定义的
+        孤儿规则: 无法为外部类型来实现外部trait
+            --> 避免两个crate可以为同一类型实现同一个trait
+    默认实现:
+        pub trait Summary {
+            // 默认实现的方法可以调用trait中的其他方法, 即使这些方法没有默认实现
+            // 无法从方法的重写实现中调用默认的实现
+            fn summarize(&self) -> String {
+                return String::from("(Read more...)");
+            }
+        }
+        impl Summary for NewsArticle {
+        }
+        println!("{}", article.summarize());
+    Trait作为参数:
+        impl trait:
+            pub fn notify(item1: impl Summary, item2: impl Summary) {
+                println!("Breaking news! {}", item1.summarize());
+                println!("Breaking news! {}", item2.summarize());
+            }
+        trait bound:
+            pub fn notify<T: Summary>(item1: T, item2: T) {
+                println!("Breaking news! {}", item1.summarize());
+                println!("Breaking news! {}", item2.summarize());
+            }
+        使用+指定多个trait bound:
+            pub fn notify(item: impl Summary + Display) {
+            pub fn notify<T: Summary + Display>(item: T) {
+                println!("Breaking news! {}", item.summarize());
+                println!("Breaking news! {}", item.display());
+            }
+        trait bound使用where子句:
+            pub fn notify<T, U>(a: T, b: U) -> String
+                where
+                    T: Summary + Display,
+                    U: Clone + Debug
+            {
+                println!("Breaking news! {}", item.summarize());
+            }
+    实现trait作为返回类型: --> impl trait只能返回确定的同一种类型, 返回可能不同类型的代码会报错
+        pub fn notify(item: impl Summary + Display) -> impl MyResult
+    使用trait有条件的实现方法
+        使用泛型类型参数的imp块上使用trait bound, 可以有条件的为实现了特定trait的类型来实现方法
+        也可以为实现了其他trait的任意类型有条件的实现某个trait
+        为满足Trait Bound的所有类型上实现Trait叫做覆盖实现
+        impl <T: fmt::Display> ToString for T {
+            default fn to_string(&self) -> String{...}
+        }
+生命周期:
+    rust的每个引用都有自己的生命周期
+    生命周期: 引用保持有效的作用域
+        --> 大多数情况下, 生命周期是隐式的, 可被推断的
+        --> 当引用的生命周期可能以不同的方式相互关联时: 手动标注生命周期
+        --> 生命周期的主要目标: 避免悬垂引用
+    借用检查器: 比较作用域来判断所有的借用是否合法
+    函数中的泛型生命周期:
+        // longest函数返回的引用的生命周期与传入该函数的引用的生命周期的较小者一致
+        fn longest<'a>(x: &'a str, y: &'a str) -> &'a str {
+            if x.len() > y.len() { x } else { y }
+        }
+        fn longest<'a>(x: &'a str, y: &str) -> &'a str {
+            x
+        }
+    结构体定义中的生命周期注解:
+        // 一个存放引用的结构体，所以其定义需要生命周期注解
+        // 这个注解意味着 ImportantExcerpt 的实例不能比其 part 字段中的引用存在的更久
+        struct ImportantExcerpt<'a> {
+            part: &'a str,
+        }
+        fn main() {
+            let novel = String::from("Call me Ishmael. Some years ago...");
+            let first_sentence = novel.split('.').next().expect("Could not find a '.'");
+            let i = ImportantExcerpt {
+                part: first_sentence,
+            };
+        }
+    生命周期省略:
+        函数或方法的参数的生命周期被称为输入生命周期, 返回值的生命周期被称为输出生命周期
+        生命周期省略规则:
+            每一个是引用的参数都有它自己的生命周期参数
+            如果只有一个输入生命周期参数，那么它被赋予所有输出生命周期参数
+                --> fn foo<'a>(x: &'a i32) -> &'a i32
+            如果方法有多个输入生命周期参数并且其中一个参数是 &self 或 &mut self，说明是个对象的方法
+        那么所有输出生命周期参数被赋予 self 的生命周期
+    方法定义中的生命周期注解:
+        impl<'a> ImportantExcerpt<'a> {
+            fn announce_and_return_part(&self, announcement: &str) -> &str {
+                println!("Attention please: {}", announcement);
+                self.part
+            }
+        }
+    静态生命周期:
+        'static，其生命周期能够存活于整个程序期间, 所有的字符串字面值都拥有 'static 生命周期
+            --> let s: &'static str = "I have a static lifetime.";
+    结合泛型类型参数、trait bounds 和生命周期:
+        use std::fmt::Display;
+        fn longest_with_an_announcement<'a, T>(
+            x: &'a str,
+            y: &'a str,
+            ann: T,
+        ) -> &'a str
+        where
+            T: Display,
+        {
+            println!("Announcement! {}", ann);
+            if x.len() > y.len() {
+                x
+            } else {
+                y
+            }
+        }

@@ -8,7 +8,7 @@ rust程序:
     编译: rustc hello_word.rs
         --> 会生成exe和pdb(包含调试信息)
         --> rust是ahead-of-time语言, 编译后执行不依赖rust
-        --> rustc只适合简单的rust程序, 负责的需要用cargo
+        --> rustc只适合简单的rust程序, 复杂的需要用cargo
     运行:
         .\hello_word.exe windows
         ./hello_word linux
