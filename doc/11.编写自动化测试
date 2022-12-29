@@ -1,0 +1,86 @@
+如何编写测试:
+   #[cfg(test)]
+   mod tests {
+       #[test]
+       fn it_works() {
+           assert_eq!(2+2, 4);
+       }
+   }
+   ==> cargo test
+
+   使用 assert! 宏来检查结果:
+    assert!(larger.can_hold(&smaller));
+        --> 如果值是 true，assert! 什么也不做，同时测试会通过。如果值为 false，assert! 调用 panic! 宏，这会导致测试失败
+   使用 assert_eq! 和 assert_ne! 宏来测试相等:
+    assert_eq!(4, add_two(2));
+   自定义失败信息:
+    assert!(result.contains("Carol"),
+        "Greeting did not contain name, value was `{}`", result);
+   使用 should_panic 检查 panic:
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+
+        #[test]
+        #[should_panic] / #[should_panic(expected = "Guess value must be less than or equal to 100")]
+        fn greater_than_100() {
+            Guess::new(200);
+        }
+    }
+   将 Result<T, E> 用于测试:
+控制测试如何运行:
+   cargo test:
+    生成的二进制文件的默认行为是并行的运行所有测试，并截获测试运行过程中产生的输出，阻止他们被显示出来
+   cargo test -- --test-threads=1
+    精确的控制线程的数量
+   cargo test -- --show-output
+    显示函数输出, 默认情况下，当测试通过时，Rust 的测试库会截获打印到标准输出的所有内容
+   cargo test fnName
+    可以向 cargo test 传递任意测试的名称来只运行这个测试
+   cargo test preName
+    可以指定部分测试的名称，任何名称匹配这个名称的测试会被运行
+   cargo test -- --ignored
+    只希望运行被忽略的测试
+        --> #[ignore]标记的用例, cargo test不会执行
+        --> 全部运行 cargo test -- --include-ignored
+测试的组织结构:
+    单元测试
+        测试模块和 #[cfg(test)]
+            #[cfg(test)]
+            mod tests {
+                #[test]
+                fn it_works() {
+                    assert_eq!(2 + 2, 4);
+                }
+            }
+        测试私有函数
+            fn internal_adder(a: i32, b: i32) -> i32 {
+                a + b
+            }
+
+            #[cfg(test)]
+            mod tests {
+                use super::*;
+
+                #[test]
+                fn internal() {
+                    assert_eq!(4, internal_adder(2, 2));
+                }
+            }
+    集成测试
+        tests目录
+            use test_01;
+
+            #[test]
+            fn it_adds_two() {
+                assert_eq!(4, adder::add_two(2));
+            }
+        集成测试中的子模块:
+            创建 tests/common/mod.rs ，而不是创建 tests/common.rs
+            use test_01;
+            mod common;
+            #[test]
+            fn it_adds_two() {
+                common::setup();
+                assert_eq!(4, adder::add_two(2));
+            }

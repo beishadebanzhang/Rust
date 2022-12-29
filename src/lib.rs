@@ -1,7 +1,17 @@
-mod parent_mod {
+pub fn add_two(a: i32) -> i32 {
+    internal_adder(a, 2)
+}
 
-    mod child_mod_1 {}
+fn internal_adder(a: i32, b: i32) -> i32 {
+    a + b
+}
 
-    mod child_mod_2 {}
+#[cfg(test)]
+mod tests {
+    use super::*;
 
+    #[test]
+    fn internal() {
+        assert_eq!(4, internal_adder(2, 2));
+    }
 }
