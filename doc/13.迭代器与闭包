@@ -1,0 +1,191 @@
+闭包:
+    Rust的闭包（closures）是可以保存在一个变量中或作为参数传递给其他函数的匿名函数
+    闭包不要求像 fn 函数那样在参数和返回值上注明类型
+        --> 不标注, 多次调用参数、返回值类型必须固定
+        --> 尝试调用一个被推断为两个不同类型的闭包将会报错
+    let expensive_closure = |num| { // |num: u32| -> u32 {
+        println!("calculating slowly...");
+        thread::sleep(Duration::from_secs(2));
+        num
+    };
+    惰性求值:
+        struct Cacher<T>
+        where
+            T: Fn(u32) -> u32,
+        {
+            calculation: T,
+            value: Option<u32>,
+        }
+
+        impl<T> Cacher<T>
+        where
+            T: Fn(u32) -> u32,
+        {
+            fn new(calculation: T) -> Cacher<T> {
+                Cacher {
+                    calculation,
+                    value: None,
+                }
+            }
+
+            fn value(&mut self, arg: u32) -> u32 {
+                match self.value {
+                    Some(v) => v,
+                    None => {
+                        let v = (self.calculation) (arg);
+                        self.value = Some(v);
+                        return v;
+                    }
+                }
+            }
+
+        }
+
+        fn generate_workout(intensity: u32, random_number: u32) {
+            let mut expensive_result = Cacher::new(|num| {
+                println!("calculating slowly...");
+                thread::sleep(Duration::from_secs(2));
+                num
+            });
+
+            if intensity < 25 {
+                println!("Today, do {} pushups!", expensive_result.value(intensity));
+                println!("Next, do {} situps!", expensive_result.value(intensity));
+            } else {
+                if random_number == 3 {
+                    println!("Take a break today! Remember to stay hydrated!");
+                } else {
+                    println!(
+                        "Today, run for {} minutes!",
+                        expensive_result.value(intensity)
+                    );
+                }
+            }
+        }
+    闭包会捕获其环境
+        fn main() {
+            let x = 4;
+            let equal_to_x = |z| z == x;
+            let y = 4;
+            assert!(equal_to_x(y));
+        }
+    move: 强制获取所有权
+        fn main() {
+            let x = vec![1, 2, 3];
+            let equal_to_x = move |z| z == x;
+            println!("can't use x here: {:?}", x); // 报错, x所有权已被闭包获取
+            let y = vec![1, 2, 3];
+            assert!(equal_to_x(y));
+        }
+迭代器处理元素序列:
+    迭代器（iterator）负责遍历序列中的每一项和决定序列何时结束的逻辑
+    在 Rust 中，迭代器是 惰性的（lazy），这意味着在调用方法使用迭代器之前它都不会有效果
+    例:
+        let v1 = vec![1, 2, 3];
+        let v1_iter = v1.iter(); // 不可变引用, into_iter()可拥有所有权, iter_mut()迭代可变引用
+        for val in v1_iter {
+            println!("Got: {}", val);
+        }
+        iter(): 通过iter()调用得到的迭代器，其中迭代的是nums数组中元素的的引用（借用）
+            // 可以看到，闭包中的参数x前面带有引用&符号
+            let borrowed_values = nums.iter().for_each(|&x| {
+                println!("{}", x);//x为i32类型
+            });
+        into_iter():
+            通过into_iter()调用得到的迭代器，其中迭代的是nums数组中元素本身（占据所有权）
+            调用nums.into_iter()之后，nums变量的所有权会被转移走，无法再次使用nums
+            let nums = vec![1,2,3,4];
+            // 迭代器中迭代的是nums数组中元素本身（占据所有权）
+            let owned_values = nums.into_iter().for_each(|x| {
+                println!("{}", x);
+            });
+            // 下面这行代码编译不过：borrow of moved value: `nums`，即nums所有权已被转移走
+            println!("{:?}", nums);
+    消费迭代器方法:
+        调用 next 方法的方法被称为 消费适配器（consuming adaptors），因为调用他们会消耗迭代器
+         #[test]
+         fn iterator_sum() {
+            let v1 = vec![1, 2, 3];
+            let v1_iter = v1.iter();
+            let total: i32 = v1_iter.sum(); // 会消耗掉迭代器, 之后不再允许使用 v1_iter, 因为调用sum时它会获取迭代器的所有权
+            assert_eq!(total, 6);
+         }
+    迭代器适配器:
+        许我们将当前迭代器变为不同类型的迭代器, 可以链式调用多个迭代器适配器
+        例:
+            let v1: Vec<i32> = vec![1, 2, 3];
+            let v2: Vec<_> = v1.iter().map(|x| x + 1).collect();
+            assert_eq!(v2, vec![2, 3, 4]);
+    自定义迭代器与使用:
+        struct Counter {
+            count: u32,
+        }
+
+        impl Counter {
+            fn new() -> Counter {
+                Counter { count: 0 }
+            }
+        }
+
+        impl Iterator for Counter {
+            type Item = u32;
+
+            fn next(&mut self) -> Option<Self::Item> {
+                if self.count < 5 {
+                    self.count += 1;
+                    Some(self.count)
+                } else {
+                    None
+                }
+            }
+        }
+
+        #[test]
+        fn using_other_iterator_trait_methods() {
+            let sum: u32 = Counter::new()
+                .zip(Counter::new().skip(1))
+                .map(|(a, b)| a * b)
+                .filter(|x| x % 3 == 0)
+                .sum();
+            assert_eq!(18, sum);
+        }
+    改进之前的IO项目:
+        impl Config {
+            pub fn new(mut args: env::Args) -> Result<Config, &'static str> {
+                args.next();
+
+                let query = match args.next() {
+                    Some(arg) => arg,
+                    None => return Err("Didn't get a query string"),
+                };
+
+                let filename = match args.next() {
+                    Some(arg) => arg,
+                    None => return Err("Didn't get a file name"),
+                };
+
+                let case_sensitive = env::var("CASE_INSENSITIVE").is_err();
+
+                Ok(Config {
+                    query,
+                    filename,
+                    case_sensitive,
+                })
+            }
+        }
+
+        fn main() {
+            let config = Config::new(env::args()).unwrap_or_else(|err| {
+                eprintln!("Problem parsing arguments: {}", err);
+                process::exit(1);
+            });
+
+            // --snip--
+        }
+
+        pub fn search<'a>(query: &str, contents: &'a str) -> Vec<&'a str> {
+            contents
+                .lines()
+                .filter(|line| line.contains(query))
+                .collect()
+        }

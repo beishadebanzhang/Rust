@@ -8,12 +8,18 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn new(args: &[String]) -> Result<Config, &'static str> {
+    pub fn new(mut args: env::Args) -> Result<Config, &'static str> {
         if args.len() < 3 {
             return Err("not enough argument");
         }
-        let query = args[1].clone();
-        let file_name = args[2].clone();
+        let query = match args.next() {
+            Some(arg) => arg,
+            None => return Err("Didn't get a query string"),
+        };
+        let file_name = match args.next() {
+            Some(arg) => arg,
+            None => return Err("Didn't get a file name"),
+        };
         let case_sensitive = env::var("CASE_INSENSITIVE").is_err();
         return Ok(Config {query, file_name, case_sensitive});
     }
@@ -62,9 +68,9 @@ mod tests {
     fn one_result() {
         let query = "duct";
         let contents = "\
-Rust:
-safe, fast, productive.
-Pick three.";
+    Rust:
+    safe, fast, productive.
+    Pick three.";
         assert_eq!(vec!["safe, fast, productive."], search(query, contents));
     }
 
@@ -72,10 +78,10 @@ Pick three.";
     fn case_insensitive() {
         let query = "rUsT";
         let contents = "\
-Rust:
-safe, fast, productive.
-Pick three.
-Trust me.";
+    Rust:
+    safe, fast, productive.
+    Pick three.
+    Trust me.";
 
         assert_eq!(
             vec!["Rust:", "Trust me."],
