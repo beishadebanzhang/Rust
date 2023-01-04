@@ -14,6 +14,81 @@
         let list = Cons(1, Box::new(Cons(2, Box::new(Cons(3, Box::new(Nil))))));
     Box<T> 类型是一个智能指针，因为它实现了 Deref trait，它允许 Box<T> 值被当作引用对待
     当 Box<T> 值离开作用域时，由于 Box<T> 类型 Drop trait 的实现，box 所指向的堆数据也会被清除
+    Box<T>练习 -- 链表实现:
+        use std::fmt::Display;
+
+        #[derive(Debug)]
+        struct ListNode<T: Display> {
+            data: T,
+            next: Option<Box<ListNode<T>>>,
+        }
+
+        impl<T: Display> ListNode<T> {
+            fn new(val: T) -> ListNode<T> {
+                return ListNode { data: val, next: None};
+            }
+        }
+
+        #[derive(Debug)]
+        struct ForwardList<T: Display> {
+            size: u32,
+            head: Option<Box<ListNode<T>>>
+        }
+
+        impl<T: Display> ForwardList<T> {
+            fn new () -> ForwardList<T> {
+                return ForwardList {size: 0, head: None};
+            }
+
+            fn push_front(&mut self, val: T) {
+                let mut node = ListNode::new(val);
+                if let Some(_box) = self.head.take() {
+                    node.next = Some(_box);
+                }
+                self.head = Some(Box::new(node));
+                self.size += 1;
+            }
+
+            fn display(&self) {
+                println!("[");
+                let mut now = &self.head;
+                let mut first = true;
+
+                while let Some(v) = now {
+                    match first {
+                        true => {
+                            print!("{}", v.data);
+                            first = false;
+                        },
+                        false => {
+                            print!(", {}", v.data);
+                        },
+                    }
+                    match now {
+                        None => {
+                            break;
+                        },
+                        node => {
+                            now = &node;
+                        },
+                    }
+                }
+                println!("[");
+            }
+
+            #[allow(unused)]
+            fn front(&self) -> Option<&T> {
+                match &self.head {
+                    None => None,
+                    Some(node) => Some(&node.data),
+                }
+            }
+
+            fn clear(&mut self) {
+                self.head = None; // todo
+            }
+
+        }
 通过 Deref trait 将智能指针当作常规引用处理:
     实现 Deref trait 允许我们重载 解引用运算符（dereference operator）*
     通过这种方式实现 Deref trait 的智能指针可以被当作常规引用来对待，可以编写操作引用的代码并用于智能指针
@@ -45,7 +120,7 @@
             type Target = T;
 
             fn deref(&self) -> &Self::Target {
-                &self.0
+                &self.0 // 返回的为一个指针, &T类型, println!会自动为指针进行解引用
             }
         }
 
@@ -58,6 +133,12 @@
         }
     函数和方法的隐式 Deref 强制转换:
         Deref 强制转换 可以将 &String 转换为 &str，因为 String 实现了 Deref trait 因此可以返回 &str
+            --> 一个类型T实现了Deref trait，并且这个T的关联类型为U，那么就可以实现隐式的从T到&U的转换
+                --> 关联类型
+                    impl ops::Deref for String {
+                        type Target = str; // 此处即String的关联类型是str
+                    }
+                    --> 这个强制转换可以递归的进行，直到不能再解引用为止 MyBox<T> --> &String --> &str
         fn hello(name: &str) {
             println!("Hello, {}!", name);
         }
@@ -103,12 +184,42 @@ Rc<T> 引用计数智能指针:
             let c = Cons(4, Rc::clone(&a));
         }
     克隆 Rc<T> 会增加引用计数:
+        let r = Rc::new(Foo::new(10));
+        let r1 = r.clone();
+        let r3 = Rc::clone(&r);
+        println!("{},{},{}",Rc::strong_count(&r),Rc::strong_count(&r1),Rc::strong_count(&r3));
         Rc::strong_count(&a); // 获取引用计数, Drop trait 的实现当 Rc<T> 值离开作用域时自动减少引用计数
-// todo RefCell<T> 和内部可变性模式:
-    通过 RefCell<T> 在运行时检查借用规则:
-        Rc<T> 允许相同数据有多个所有者；Box<T> 和 RefCell<T> 有单一所有者
-        Box<T> 允许在编译时执行不可变或可变借用检查；Rc<T>仅允许在编译时执行不可变借用检查；RefCell<T> 允许在运行时执行不可变或可变借用检查
-        因为 RefCell<T> 允许在运行时执行可变借用检查，所以我们可以在即便 RefCell<T> 自身是不可变的情况下修改其内部的值
-    内部可变性：不可变值的可变借用:
-引用循环会导致内存泄露:
+RefCell<T> 和内部可变性模式:
+    RefCell<T> 代表其数据的唯一的所有权
+    RefCell对于借用规则是在运行时期检查的，需要使用unsafe代码块，如果不符合借用规则，程序会panic
+    借用规则:
+        在任意给定时刻，只能拥有一个可变引用或任意数量的不可变引用 之一（而不是两者）
+        引用必须总是有效的
+    基本使用:
+        // RefCell没有实现Dispaly, 没有实现Deref, 实现了Drop, 有borrow/borrow_mut替代Deref trait
+        let r =  RefCell::new(Foo::new(10));
+        println!("{}",r.borrow());
+        println!("{}",r.borrow_mut()); // 不会panic原因: 不可变借用在用于执行完println！随之销毁，因为其是一个无名的借用，生命周期就是其所在的那行代码
+        // 违反借用规则程序会panic
+        let b1 = r.borrow_mut();
+        let b2 = r.borrow_mut();
+    RefCell是如何检查借用规则的:
+        其有两个计数器，如果得到其一个不可变借用，相应的计数器加一，对于可变借用，也是同样
+        如果RefCell发现其计数器不符合借用规则，就会panic
+    结合Rc和RefCell来拥有多个可变数据所有者:
+        let value = Rc::new(RefCell::new(5));
+        // 5 -> Nil
+        let a = Rc::new(Cons(Rc::clone(&value), Rc::new(Nil)));
+        // 6 -> 5 ->  Nil
+        let b = Cons(Rc::new(RefCell::new(6)), Rc::clone(&a));
+        // 10 -> 5 -> Nil
+        let c = Cons(Rc::new(RefCell::new(10)), Rc::clone(&a));
+        // 获取value的可变借用，将其加10，注意：现在有多个Rc指向value
+        *value.borrow_mut() += 10;
+        println!("a after = {:?}", a);
+        println!("b after = {:?}", b);
+        println!("c after = {:?}", c);
+不可能通过代码分析来检测隐藏的错误:
+    Rust的检查器是保守的，着就意味着，Rust检查器不能证明你的程序完全正确，就不会给你编译通过
+    虽然你不能看出来我的这个程序是完全正确的，但是我自己可以保证这个程序不会出问题（当然，你不可能有十分把握），然后绕过编译器的检，这正是智能指针和unsafe出现的一部分意义
 
